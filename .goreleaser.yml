@@ -37,9 +37,18 @@ brew:
     owner: ThatTomPerson
     name: homebrew-tap
 
+snapcraft:
+  grade: stable
+  confinement: strict
+  summary: SSH into a Docker Container running in an ECS Cluster
+  description: |
+    SSH into a Docker Container running in an ECS Cluster
+  apps:
+    remote:
+      plugs: ["home", "network"]
+
 release:
   draft: true
-
 
 changelog:
   sort: asc
