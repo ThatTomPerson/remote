@@ -1,5 +1,6 @@
 release: clean
-	goreleaser --snapshot
+	goreleaser
+	snapcraft push dist/dps-remote_*.snap
 .PHONY: clean
 
 clean:

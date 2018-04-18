@@ -38,6 +38,7 @@ brew:
     name: homebrew-tap
 
 snapcraft:
+  name: dps-remote
   grade: stable
   confinement: strict
   summary: SSH into a Docker Container running in an ECS Cluster
