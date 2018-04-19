@@ -9,16 +9,19 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
+// Service wraps ecs.Service to add fuctionality
 type Service struct {
 	scout   *Scout
 	Service *ecs.Service
 }
 
+// Tasks wraps []*ecs.Task to add fuctionality
 type Tasks struct {
 	scout *Scout
 	Tasks []*ecs.Task
 }
 
+// InstanceIds the instances that are running these tasks
 func (t *Tasks) InstanceIds() ([]*string, error) {
 
 	var arns []*string
@@ -46,6 +49,7 @@ func (t *Tasks) InstanceIds() ([]*string, error) {
 	return ids, nil
 }
 
+// TaskArns arns of the tasks running in this service
 func (s *Service) TaskArns() ([]*string, error) {
 	input := &ecs.ListTasksInput{
 		Cluster:     s.scout.Cluster,
@@ -82,12 +86,14 @@ func (s *Service) Tasks() (*Tasks, error) {
 	}, nil
 }
 
+// Scout functions for discovering aws resources
 type Scout struct {
 	Cluster *string
 	ECS     *ecs.ECS
 	EC2     *ec2.EC2
 }
 
+// New return a new Scout
 func New() *Scout {
 	sess := session.Must(session.NewSession())
 	config := &aws.Config{Region: aws.String("ap-southeast-2")}
@@ -98,6 +104,8 @@ func New() *Scout {
 		EC2:     ec2.New(sess, config),
 	}
 }
+
+// Instances get instances from ids
 func (s *Scout) Instances(ids []*string) ([]*ec2.Instance, error) {
 	input := &ec2.DescribeInstancesInput{
 		InstanceIds: ids,
@@ -117,6 +125,7 @@ func (s *Scout) Instances(ids []*string) ([]*ec2.Instance, error) {
 	return is, nil
 }
 
+// Instance just one instance
 func (s *Scout) Instance(id *string) (*ec2.Instance, error) {
 	is, err := s.Instances([]*string{id})
 	if err != nil {
@@ -130,6 +139,7 @@ func (s *Scout) Instance(id *string) (*ec2.Instance, error) {
 	return is[0], nil
 }
 
+// Service find an ecs service
 func (s *Scout) Service(name string) (*Service, error) {
 	input := &ecs.DescribeServicesInput{
 		Cluster:  s.Cluster,

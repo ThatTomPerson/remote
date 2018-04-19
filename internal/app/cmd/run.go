@@ -24,12 +24,6 @@ import (
 	"github.com/ThatTomPerson/remote/internal/app/scout"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	_ "github.com/aws/aws-sdk-go/aws"
-	_ "github.com/aws/aws-sdk-go/aws/awserr"
-	_ "github.com/aws/aws-sdk-go/aws/session"
-	_ "github.com/aws/aws-sdk-go/service/ec2"
-	_ "github.com/aws/aws-sdk-go/service/ecs"
 )
 
 // runCmd represents the run command
