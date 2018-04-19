@@ -64,6 +64,7 @@ func (s *Service) TaskArns() ([]*string, error) {
 	return output.TaskArns, nil
 }
 
+// Tasks get the Tasks from the service
 func (s *Service) Tasks() (*Tasks, error) {
 	a, err := s.TaskArns()
 	if err != nil {
