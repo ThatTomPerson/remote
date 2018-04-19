@@ -48,9 +48,6 @@ snapcraft:
     remote:
       plugs: ["home", "network"]
 
-release:
-  draft: true
-
 changelog:
   sort: asc
   filters:
