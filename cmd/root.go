@@ -37,7 +37,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	// PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	// 	return fmt.Errorf(strings.Join(args, " "))
+	// },
+	// RunE: func(cmd *cobra.Command, args []string) error {
+	// 	return fmt.Errorf(strings.Join(args, " "))
+	// },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

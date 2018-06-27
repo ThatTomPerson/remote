@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/ThatTomPerson/remote/internal/app/cmd"
+import "github.com/ThatTomPerson/remote/cmd"
 
 func main() {
 	cmd.Execute()

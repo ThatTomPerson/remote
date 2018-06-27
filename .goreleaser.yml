@@ -1,7 +1,7 @@
 project_name: remote
 
 build:
-  main: cmd/remote/main.go
+  main: main.go
   binary: remote
   goos:
     - darwin
