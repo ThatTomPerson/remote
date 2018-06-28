@@ -17,14 +17,13 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"net"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/ThatTomPerson/remote/internal/pkg/scout"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 // runCmd represents the run command
@@ -53,6 +52,12 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			return fmt.Errorf("can not find service %s: %v", env, err)
 		}
+
+		td, err := srv.TaskDef(s.Service.TaskDefinition)
+		if err != nil {
+			return fmt.Errorf("can not find task def %s: %v", env, err)
+		}
+
 		t, err := s.Tasks()
 		if err != nil {
 			return fmt.Errorf("can not find tasks for service %s: %v", env, err)
@@ -69,10 +74,10 @@ to quickly create a Cobra application.`,
 		}
 
 		// taskArn := *t.Tasks[0].TaskDefinitionArn
-		ipAddress := *i.PublicIpAddress
+		ipAddress := *i.PrivateIpAddress
 
-		// user :=
-		// address := user + "@" + ipAddress
+		user := viper.GetString("username")
+		address := user + "@" + ipAddress
 		// command := "sh"
 		// if len(args) > 0 {
 		// 	command = strings.Join(args, " ")
@@ -81,44 +86,75 @@ to quickly create a Cobra application.`,
 		// taskName := taskArn[strings.Index(taskArn, "/"):]
 		// taskRevision := taskName[strings.Index(taskName, ":")+1:]
 
-		sock, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
-		if err != nil {
-			return fmt.Errorf("unable to open ssh-agent socket: %v", err)
-		}
+		// sock, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+		// if err != nil {
+		// 	return fmt.Errorf("unable to open ssh-agent socket: %v", err)
+		// }
 
 		// Create the Signer for this private key.
 
-		a := agent.NewClient(sock)
-		signers, err := a.Signers()
-		if err != nil {
-			return fmt.Errorf("unable to get signers: %v", err)
-		}
+		// a := agent.NewClient(sock)
+		// signers, err := a.Signers()
+		// if err != nil {
+		// 	return fmt.Errorf("unable to get signers: %v", err)
+		// }
 
-		config := &ssh.ClientConfig{
-			User: viper.GetString("username"),
-			Auth: []ssh.AuthMethod{
-				ssh.PublicKeys(signers...),
-			},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		}
-		client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", ipAddress), config)
-		if err != nil {
-			log.Fatal("Failed to dial: ", err)
-		}
+		// config := &ssh.ClientConfig{
+		// 	User: viper.GetString("username"),
+		// 	Auth: []ssh.AuthMethod{
+		// 		ssh.PublicKeys(signers...),
+		// 	},
+		// 	HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		// }
+		// client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", ipAddress), config)
+		// if err != nil {
+		// 	log.Fatal("Failed to dial: ", err)
+		// }
 
-		session, err := client.NewSession()
-		if err != nil {
-			log.Fatal("Failed to create session: ", err)
-		}
-		defer session.Close()
+		// session, err := client.NewSession()
+		// if err != nil {
+		// 	log.Fatal("Failed to create session: ", err)
+		// }
+		// defer session.Close()
+
+		// modes := ssh.TerminalModes{
+		// 	ssh.ECHO:  0, // Disable echoing
+		// 	ssh.IGNCR: 1, // Ignore CR on input.
+		// }
+
+		// err = session.RequestPty("xterm-256color", 80, 40, modes)
+		// if err != nil {
+		// 	return err
+		// }
 
 		// Once a Session is created, you can execute a single command on
 		// the remote side using the Run method.
 
-		session.Stdout = os.Stdout
-		if err := session.Run("/usr/bin/whoami"); err != nil {
-			log.Fatal("Failed to run: " + err.Error())
+		// Set IO
+		// session.Stdout = ansicolor.NewAnsiColorWriter(os.Stdout)
+		// session.Stderr = ansicolor.NewAnsiColorWriter(os.Stderr)
+		// session.Stdin = os.Stdin
+
+		def := td.ContainerDefinitions[0]
+
+		envString := ""
+
+		for _, e := range def.Environment {
+			envString += fmt.Sprintf(" -e %s=\"%s\"", *e.Name, *e.Value)
 		}
+
+		// entrypoint := strings.Join(aws.StringValueSlice(td.ContainerDefinitions[0].EntryPoint), " ")
+		command := "bash"
+		if len(args) > 0 {
+			command = strings.Join(args, " ")
+		}
+
+		command = fmt.Sprintf("sudo docker run --rm -it%s %s %s", envString, *def.Image, command)
+		log.Println(command)
+
+		// if err := session.Run(command); err != nil {
+		// 	return fmt.Errorf("Failed to run: %v", err.Error())
+		// }
 
 		// command = fmt.Sprintf(
 		// 	"sudo docker exec -it $(sudo docker ps | grep ecs-%s-%s-php | awk '{print $1}' | head -n1) env TERM=screen %s",
@@ -130,13 +166,13 @@ to quickly create a Cobra application.`,
 		// log.Println(address)
 		// log.Println(command)
 
-		// child := exec.Command("ssh", address, "-t", command)
+		child := exec.Command("ssh", address, "-t", command)
 
-		// child.Stdout = os.Stdout
-		// child.Stdin = os.Stdin
-		// child.Stderr = os.Stderr
+		child.Stdout = os.Stdout
+		child.Stdin = os.Stdin
+		child.Stderr = os.Stderr
 
-		// child.Run()
+		child.Run()
 
 		return nil
 	},

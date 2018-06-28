@@ -21,6 +21,18 @@ type Tasks struct {
 	Tasks []*ecs.Task
 }
 
+func (s *Scout) TaskDef(def *string) (*ecs.TaskDefinition, error) {
+	res, err := s.ECS.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: def,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.TaskDefinition, nil
+}
+
 // InstanceIds the instances that are running these tasks
 func (t *Tasks) InstanceIds() ([]*string, error) {
 
