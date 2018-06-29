@@ -43,6 +43,11 @@ to quickly create a Cobra application.`,
 	// RunE: func(cmd *cobra.Command, args []string) error {
 	// 	return fmt.Errorf(strings.Join(args, " "))
 	// },
+	RunE: func(cmd *cobra.Command, args []string) error {
+		projectCmd.Execute()
+
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

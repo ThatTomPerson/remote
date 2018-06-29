@@ -15,16 +15,15 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"strings"
+	"errors"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
-// runCmd represents the run command
-var projectCmd = &cobra.Command{
-	Use:   "project",
+// showCmd represents the show command
+var showCmd = &cobra.Command{
+	Use:   "show",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -32,15 +31,36 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		project, err := cmd.Flags().GetString("project")
+		if err != nil {
+			return err
+		}
+		if project == "" {
+			return errors.New("please select a project")
+		}
+
+		env, err := cmd.Flags().GetString("environment")
+		if err != nil {
+			return err
+		}
+
+		log.Printf("%s-%s-http", project, env)
+		return nil
+	},
 }
 
 func init() {
-	rootCmd.AddCommand(projectCmd)
-	projectCmd.Aliases = []string{"acg", "dsg"}
-	projectDefault := ""
-	if os.Args[1] != "project" {
-		projectDefault = os.Args[1]
-	}
-	projectCmd.PersistentFlags().StringP("project", "p", projectDefault, fmt.Sprintf("project [%s]", strings.Join(projectCmd.Aliases, ", ")))
-	projectCmd.PersistentFlags().StringP("environment", "e", "production", "environment")
+	projectCmd.AddCommand(showCmd)
+	projectCmd.MarkFlagRequired("project")
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// showCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// showCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
