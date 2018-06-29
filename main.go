@@ -1,21 +1,107 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
-import "github.com/ThatTomPerson/remote/cmd"
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"strings"
+
+	"github.com/ThatTomPerson/remote.v2/scout"
+	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+type commands []string
+
+func (i *commands) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+func (i *commands) String() string {
+	return strings.Join(*i, " ")
+}
+func (i *commands) IsCumulative() bool {
+	return true
+}
+
+func Commands(s kingpin.Settings) (target *commands) {
+	target = new(commands)
+	s.SetValue((*commands)(target))
+	return
+}
+
+var (
+	version = "dev"
+)
+
+var (
+	user        = kingpin.Flag("user", "User to ssh with").Default("ec2-user").Short('u').String()
+	environment = kingpin.Flag("environment", "Enable debug mode.").Default("production").Short('e').String()
+	project     = kingpin.Arg("project", "project").Required().String()
+	command     = Commands(kingpin.Arg("command", "command to run").Default("bash"))
+)
+
+func run() error {
+	kingpin.Version(version)
+	kingpin.Parse()
+
+	serviceName := fmt.Sprintf("%s-%s-http", *project, *environment)
+	srv := scout.New()
+
+	s, err := srv.Service(serviceName)
+	if err != nil {
+		return fmt.Errorf("can not find service %s: %v", serviceName, err)
+	}
+
+	td, err := srv.TaskDef(s.Service.TaskDefinition)
+	if err != nil {
+		return fmt.Errorf("can not find task def %s: %v", serviceName, err)
+	}
+
+	t, err := s.Tasks()
+	if err != nil {
+		return fmt.Errorf("can not find tasks for service %s: %v", serviceName, err)
+	}
+
+	ids, err := t.InstanceIds()
+	if err != nil {
+		return fmt.Errorf("no instances running service %s: %v", serviceName, err)
+	}
+
+	i, err := srv.Instance(ids[0])
+	if err != nil {
+		return fmt.Errorf("failed getting instance %s: %v", *ids[0], err)
+	}
+
+	// taskArn := *t.Tasks[0].TaskDefinitionArn
+	ipAddress := *i.PrivateIpAddress
+
+	address := *user + "@" + ipAddress
+
+	def := td.ContainerDefinitions[0]
+
+	envString := ""
+
+	for _, e := range def.Environment {
+		envString += fmt.Sprintf(" -e %s=\"%s\"", *e.Name, *e.Value)
+	}
+
+	// entrypoint := strings.Join(aws.StringValueSlice(td.ContainerDefinitions[0].EntryPoint), " ")
+
+	cmd := fmt.Sprintf("sudo docker run --rm -it%s %s %s", envString, *def.Image, command.String())
+	child := exec.Command("ssh", address, "-t", cmd)
+
+	child.Stdout = os.Stdout
+	child.Stdin = os.Stdin
+	child.Stderr = os.Stderr
+
+	return child.Run()
+
+	return nil
+}
 
 func main() {
-	cmd.Execute()
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
 }

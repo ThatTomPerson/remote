@@ -14,6 +14,8 @@ build:
   ignore:
     - goos: darwin
       goarch: 386
+  ldflags:
+    -X main.version={{.Version}}
 
 archive:
   format_overrides:
@@ -36,21 +38,3 @@ brew:
   github:
     owner: ThatTomPerson
     name: homebrew-tap
-
-snapcraft:
-  name: dps-remote
-  grade: stable
-  confinement: strict
-  summary: SSH into a Docker Container running in an ECS Cluster
-  description: |
-    SSH into a Docker Container running in an ECS Cluster
-  apps:
-    remote:
-      plugs: ["home", "network"]
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^refactor'
