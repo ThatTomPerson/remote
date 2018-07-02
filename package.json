@@ -4,7 +4,6 @@
     "major": "npm version major",
     "minor": "npm version minor",
     "patch": "npm version patch",
-    "version": "git add package.json; git commit -m \"bumped version\"; goreleaser --rm-dist",
-    "postversion": "git push; git push --tags"
+    "postversion": "goreleaser --rm-dist; git push; git push --tags"
   }
 }
