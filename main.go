@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ThatTomPerson/remote.v2/scout"
+	"github.com/ThatTomPerson/remote/scout"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -53,6 +53,8 @@ func run() error {
 		return fmt.Errorf("can not find service %s: %v", serviceName, err)
 	}
 
+	log.Printf("finding %s\n", *s.Service.ServiceName)
+
 	td, err := srv.TaskDef(s.Service.TaskDefinition)
 	if err != nil {
 		return fmt.Errorf("can not find task def %s: %v", serviceName, err)
@@ -74,9 +76,8 @@ func run() error {
 	}
 
 	// taskArn := *t.Tasks[0].TaskDefinitionArn
-	ipAddress := *i.PrivateIpAddress
-
-	address := *user + "@" + ipAddress
+	address := fmt.Sprintf("%s@%s", *user, *i.PrivateIpAddress)
+	log.Printf("ssh %s", address)
 
 	def := td.ContainerDefinitions[0]
 
@@ -86,7 +87,7 @@ func run() error {
 		envString += fmt.Sprintf(" -e %s=\"%s\"", *e.Name, *e.Value)
 	}
 
-	// entrypoint := strings.Join(aws.StringValueSlice(td.ContainerDefinitions[0].EntryPoint), " ")
+	log.Printf("docker run %s %s", *def.Image, command.String())
 
 	cmd := fmt.Sprintf("sudo docker run --rm -it%s %s %s", envString, *def.Image, command.String())
 	child := exec.Command("ssh", address, "-t", cmd)
@@ -96,8 +97,6 @@ func run() error {
 	child.Stderr = os.Stderr
 
 	return child.Run()
-
-	return nil
 }
 
 func main() {
