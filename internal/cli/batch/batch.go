@@ -1,7 +1,7 @@
 package batch
 
 import (
-	"github.com/ThatTomPerson/remote/internal/cli/root"
+	"github.com/thattomperson/remote/internal/cli/root"
 	"github.com/tj/kingpin"
 )
 

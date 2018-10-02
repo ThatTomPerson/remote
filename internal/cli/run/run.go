@@ -8,8 +8,8 @@ import (
 
 	"github.com/apex/log"
 
-	"github.com/ThatTomPerson/remote/internal/cli/root"
-	"github.com/ThatTomPerson/remote/scout"
+	"github.com/thattomperson/remote/internal/cli/root"
+	"github.com/thattomperson/remote/scout"
 	"github.com/tj/kingpin"
 )
 
@@ -101,11 +101,9 @@ func init() {
 		child.Stdin = os.Stdin
 		child.Stderr = os.Stderr
 
-		log.SetLevel(log.FatalLevel)
 		log.Infof("Running %s", command.String())
-
-		err = child.Run()
-		if err != nil {
+		log.Debug(cmd)
+		if err = child.Run(); err != nil {
 			log.Error(err.Error())
 		}
 		return nil

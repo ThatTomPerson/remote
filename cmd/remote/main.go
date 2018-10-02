@@ -3,11 +3,10 @@ package main
 import (
 	"os"
 
-	_ "github.com/ThatTomPerson/remote/internal/cli/bastion"
-	_ "github.com/ThatTomPerson/remote/internal/cli/batch"
-	_ "github.com/ThatTomPerson/remote/internal/cli/run"
+	_ "github.com/thattomperson/remote/internal/cli/batch"
+	_ "github.com/thattomperson/remote/internal/cli/run"
 
-	"github.com/ThatTomPerson/remote/internal/cli/root"
+	"github.com/thattomperson/remote/internal/cli/root"
 )
 
 var version = "master"
