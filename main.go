@@ -1,50 +1,41 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"strings"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/ThatTomPerson/remote/scout"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
-
-type commands []string
-
-func (i *commands) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-func (i *commands) String() string {
-	return strings.Join(*i, " ")
-}
-func (i *commands) IsCumulative() bool {
-	return true
-}
-
-func Commands(s kingpin.Settings) (target *commands) {
-	target = new(commands)
-	s.SetValue((*commands)(target))
-	return
-}
 
 var (
 	version = "dev"
 )
 
 var (
-	user        = kingpin.Flag("user", "User to ssh with").Default("ec2-user").Short('u').String()
-	environment = kingpin.Flag("environment", "Enable debug mode.").Default("production").Short('e').String()
-	project     = kingpin.Arg("project", "project").Required().String()
-	command     = Commands(kingpin.Arg("command", "command to run").Default("bash"))
+	app = kingpin.New("remote", "A command-line chat application.")
+
+	runCommand  = app.Command("run", "Run a command in a new container").Default()
+	user        = runCommand.Flag("user", "User to ssh with").Default("ec2-user").Short('u').String()
+	environment = runCommand.Flag("environment", "Enable debug mode.").Default("production").Short('e').String()
+	project     = runCommand.Arg("project", "project").Required().String()
+	command     = Commands(runCommand.Arg("command", "command to run").Default("bash"))
+
+	batchCommand     = app.Command("batch", "Run a command in all of the running containers for a service")
+	batchUser        = batchCommand.Flag("user", "User to ssh with").Default("ec2-user").Short('u').String()
+	batchEnvironment = batchCommand.Flag("environment", "Enable debug mode.").Default("production").Short('e').String()
+	batchProject     = batchCommand.Arg("project", "project").Required().String()
+	batchCommands    = Commands(batchCommand.Arg("command", "command to run").Default("bash"))
 )
 
-func run() error {
-	kingpin.Version(version)
-	kingpin.Parse()
-
+func run(ctx context.Context) error {
 	serviceName := fmt.Sprintf("%s-%s-http", *project, *environment)
 	srv := scout.New()
 
@@ -99,8 +90,79 @@ func run() error {
 	return child.Run()
 }
 
+// func FindAll
+
+func batch(ctx context.Context) error {
+
+	// serviceName := fmt.Sprintf("%s-%s-http", *batchProject, *batchEnvironment)
+
+	select {
+	case <-time.After(time.Second * 2):
+		// all := FindAll(serviceName)
+		return nil
+	case <-ctx.Done():
+		return errors.New("Canceled")
+	}
+
+	// serviceName := fmt.Sprintf("%s-%s-http", *batchProject, *batchEnvironment)
+
+	// srv := scout.New()
+	// s, err := srv.Service(serviceName)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// tasks, err := s.Tasks()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, t := range tasks.Tasks {
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+
+	//  spew.Dump(res)
+	// 	return nil
+	// }
+
+	return nil
+}
+
 func main() {
-	if err := run(); err != nil {
-		log.Fatal(err)
+	kingpin.Version(version)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		cancel()
+	}()
+
+	errs := make(chan error)
+
+	go func() {
+		switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+		case runCommand.FullCommand():
+			errs <- run(ctx)
+
+		case batchCommand.FullCommand():
+			errs <- batch(ctx)
+		}
+
+		errs <- nil
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Println("Canceled")
+	case err := <-errs:
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
