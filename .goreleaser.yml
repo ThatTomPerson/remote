@@ -15,7 +15,7 @@ build:
     - goos: darwin
       goarch: 386
   ldflags:
-    -X main.version={{.Version}}
+    -X main.version=v{{.Version}}
 
 archive:
   format_overrides:
