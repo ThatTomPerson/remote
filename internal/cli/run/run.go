@@ -54,7 +54,7 @@ func init() {
 			return fmt.Errorf("can not find service %s: %v", serviceName, err)
 		}
 
-		log.Debugf("found %s", *s.Service.ServiceName)
+		log.Infof("found %s", *s.Service.TaskDefinition)
 
 		td, err := srv.TaskDef(s.Service.TaskDefinition)
 		if err != nil {
