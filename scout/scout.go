@@ -2,11 +2,13 @@ package scout
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/sts"
 )
 
 // Service wraps ecs.Service to add fuctionality
@@ -19,6 +21,18 @@ type Service struct {
 type Tasks struct {
 	scout *Scout
 	Tasks []*ecs.Task
+}
+
+func (s *Scout) DefaultUser() string {
+	svc := sts.New(s.Session, s.Config)
+	res, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "ec2-user"
+	}
+
+	parts := strings.Split(*res.Arn, "/")
+
+	return parts[1]
 }
 
 func (s *Scout) TaskDef(def *string) (*ecs.TaskDefinition, error) {
@@ -104,6 +118,8 @@ type Scout struct {
 	Cluster *string
 	ECS     *ecs.ECS
 	EC2     *ec2.EC2
+	Session *session.Session
+	Config  *aws.Config
 }
 
 // New return a new Scout
@@ -115,6 +131,8 @@ func New() *Scout {
 		Cluster: aws.String("acg-development"),
 		ECS:     ecs.New(sess, config),
 		EC2:     ec2.New(sess, config),
+		Session: sess,
+		Config:  config,
 	}
 }
 

@@ -37,17 +37,21 @@ func init() {
 	cmd := root.Command("run", "Run a command in a new container.").Default()
 	cmd.Example(`remote run acg bash`, "Run bash in the service called acg.")
 
-	user := cmd.Flag("user", "User to ssh with").Default("ec2-user").Short('u').String()
+	srv := scout.New()
+
+	user := cmd.Flag("user", "User to ssh with").Short('u').String()
 	environment := cmd.Flag("environment", "Enable debug mode.").Default("production").Short('e').String()
 	project := cmd.Arg("project", "project").Required().String()
 	command := Commands(cmd.Arg("command", "command to run").Default("bash"))
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
+		if *user == "" {
+			*user = srv.DefaultUser()
+		}
+
 		serviceName := fmt.Sprintf("%s-%s-http", *project, *environment)
 
 		log.Infof("looking for %s", serviceName)
-
-		srv := scout.New()
 
 		s, err := srv.Service(serviceName)
 		if err != nil {
