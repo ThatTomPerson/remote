@@ -59,7 +59,7 @@ func init() {
 		case v := <-c:
 			if v != Cmd.GetVersion() && v != "" {
 				log.Infof("remote %s is out of date", Cmd.GetVersion())
-				log.Infof("go to https://github.com/thattomperson/remote/releases/tag/%s to update to %s", v, v)
+				log.Infof("go to https://ttp.sh/remote to update to %s", v)
 			}
 		case <-time.After(2 * time.Second):
 		}
