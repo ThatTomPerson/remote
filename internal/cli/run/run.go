@@ -98,7 +98,7 @@ func init() {
 
 		log.Debugf("docker run %s %s", *def.Image, command.String())
 
-		cmd := fmt.Sprintf("sudo docker run --rm --init -it%s %s %s", envString, *def.Image, command.String())
+		cmd := fmt.Sprintf("sudo docker run --rm --init -it%s --ulimit nofile=8192 %s %s", envString, *def.Image, command.String())
 		child := exec.Command("ssh", address, "-t", cmd)
 
 		child.Stdout = os.Stdout
