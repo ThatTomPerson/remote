@@ -35,6 +35,26 @@ func (s *Scout) DefaultUser() string {
 	return parts[1]
 }
 
+func (s *Scout) Credentials() (v []*ecs.KeyValuePair, err error) {
+
+	c, err := s.Session.Config.Credentials.Get()
+	if err != nil {
+		return v, err
+	}
+
+	v = append(v, &ecs.KeyValuePair{
+		Name:  aws.String("AWS_ACCESS_KEY_ID"),
+		Value: aws.String(c.AccessKeyID),
+	})
+
+	v = append(v, &ecs.KeyValuePair{
+		Name:  aws.String("AWS_SECRET_ACCESS_KEY"),
+		Value: aws.String(c.SecretAccessKey),
+	})
+
+	return v, nil
+}
+
 func (s *Scout) TaskDef(def *string) (*ecs.TaskDefinition, error) {
 	res, err := s.ECS.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: def,

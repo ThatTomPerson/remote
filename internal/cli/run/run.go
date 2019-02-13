@@ -92,7 +92,8 @@ func init() {
 
 		envString := ""
 
-		for _, e := range def.Environment {
+		creds, _ := srv.Credentials()
+		for _, e := range append(def.Environment, creds...) {
 			envString += fmt.Sprintf(" -e %s=\"%s\"", *e.Name, *e.Value)
 		}
 
