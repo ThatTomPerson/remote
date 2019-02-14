@@ -35,11 +35,11 @@ func (s *Scout) DefaultUser() string {
 	return parts[1]
 }
 
-func (s *Scout) Credentials() (v []*ecs.KeyValuePair, err error) {
+func (s *Scout) Credentials() (v []*ecs.KeyValuePair) {
 
 	c, err := s.Session.Config.Credentials.Get()
 	if err != nil {
-		return v, err
+		return v
 	}
 
 	v = append(v, &ecs.KeyValuePair{
@@ -52,7 +52,7 @@ func (s *Scout) Credentials() (v []*ecs.KeyValuePair, err error) {
 		Value: aws.String(c.SecretAccessKey),
 	})
 
-	return v, nil
+	return v
 }
 
 func (s *Scout) TaskDef(def *string) (*ecs.TaskDefinition, error) {
