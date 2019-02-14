@@ -2,9 +2,12 @@ package run
 
 import (
 	"fmt"
+	"net"
 	"os"
-	"os/exec"
 	"strings"
+
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/apex/log"
 
@@ -60,11 +63,11 @@ func init() {
 
 		log.Infof("found %s", *s.Service.TaskDefinition)
 
-		td, err := srv.TaskDef(s.Service.TaskDefinition)
-		if err != nil {
-			log.Errorf("can not find task def %s: %v", serviceName, err)
-			return err
-		}
+		// td, err := srv.TaskDef(s.Service.TaskDefinition)
+		// if err != nil {
+		// 	log.Errorf("can not find task def %s: %v", serviceName, err)
+		// 	return err
+		// }
 
 		t, err := s.Tasks()
 		if err != nil {
@@ -84,32 +87,71 @@ func init() {
 			return err
 		}
 
-		// taskArn := *t.Tasks[0].TaskDefinitionArn
-		address := fmt.Sprintf("%s@%s", *user, *i.PrivateIpAddress)
-		log.Infof("ssh %s", address)
+		socket := os.Getenv("SSH_AUTH_SOCK")
+		conn, err := net.Dial("unix", socket)
+		if err != nil {
+			log.Fatalf("net.Dial: %v", err)
+		}
+		agentClient := agent.NewClient(conn)
 
-		def := td.ContainerDefinitions[0]
-
-		envString := ""
-
-		for _, e := range append(def.Environment, srv.Credentials()...) {
-			envString += fmt.Sprintf(" -e %s=\"%s\"", *e.Name, *e.Value)
+		config := &ssh.ClientConfig{
+			User: *user,
+			Auth: []ssh.AuthMethod{
+				// Use a callback rather than PublicKeys
+				// so we only consult the agent once the remote server
+				// wants it.
+				ssh.PublicKeysCallback(agentClient.Signers),
+			},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		}
 
-		log.Debugf("docker run %s %s", *def.Image, command.String())
+		client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", *i.PrivateIpAddress), config)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		defer client.Close()
 
-		cmd := fmt.Sprintf("sudo docker run --rm --init -it%s --ulimit nofile=8192 %s %s", envString, *def.Image, command.String())
-		child := exec.Command("ssh", address, "-t", cmd)
+		sess, err := client.NewSession()
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		defer sess.Close()
 
-		child.Stdout = os.Stdout
-		child.Stdin = os.Stdin
-		child.Stderr = os.Stderr
+		sess.Stdout = os.Stdout
+		sess.Stdin = os.Stdin
+		sess.Stderr = os.Stderr
 
-		log.Infof("Running %s", command.String())
-		log.Debug(cmd)
-		if err = child.Run(); err != nil {
-			log.Error(err.Error())
+		if err := sess.Run(command.String()); err != nil {
+			log.Fatal("Failed to run: " + err.Error())
 		}
 		return nil
+
+		// taskArn := *t.Tasks[0].TaskDefinitionArn
+		// address := fmt.Sprintf("%s@%s", *user, *i.PrivateIpAddress)
+		// log.Infof("ssh %s", address)
+
+		// def := td.ContainerDefinitions[0]
+
+		// envString := ""
+
+		// for _, e := range append(def.Environment, srv.Credentials()...) {
+		// 	envString += fmt.Sprintf(" -e %s=\"%s\"", *e.Name, *e.Value)
+		// }
+
+		// log.Debugf("docker run %s %s", *def.Image, command.String())
+
+		// cmd := fmt.Sprintf("sudo docker run --rm --init -it%s --ulimit nofile=8192 %s %s", envString, *def.Image, command.String())
+		// child := exec.Command("ssh", address, "-t", cmd)
+
+		// child.Stdout = os.Stdout
+		// child.Stdin = os.Stdin
+		// child.Stderr = os.Stderr
+
+		// log.Infof("Running %s", command.String())
+		// log.Debug(cmd)
+		// if err = child.Run(); err != nil {
+		// 	log.Error(err.Error())
+		// }
+		// return nil
 	})
 }

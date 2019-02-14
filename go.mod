@@ -11,5 +11,6 @@ require (
 	github.com/pkg/errors v0.8.0
 	github.com/tj/go-spin v1.1.0
 	github.com/tj/kingpin v2.5.0+incompatible
+	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
